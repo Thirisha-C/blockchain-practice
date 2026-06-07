@@ -13,6 +13,7 @@ import { ContractService } from '../Services/contract-service';
 export class HomePage implements OnInit, OnDestroy {
   walletAddress = signal('');
   name = signal('');
+  currentName = signal('');
   wrongNetwork = signal(false);
   connecting = signal(false);
   settingName = signal(false);
@@ -22,19 +23,38 @@ export class HomePage implements OnInit, OnDestroy {
   showConnectionModal = signal(false);
   errorMessage = signal<string | null>(null);
   private removeChainChangedListener: (() => void) | null = null;
+  private removeAccountsChangedListener: (() => void) | null = null;
 
   constructor(
     private walletService: WalletService,
     private contractService: ContractService,
     private ngZone: NgZone
-  ) {}
+  ) { }
 
   ngOnInit() {
-    this.removeChainChangedListener = this.walletService.onChainChanged((chainId) => {
-      this.ngZone.run(() => this.updateNetworkStatus(chainId));
-    });
-  }
+    this.removeChainChangedListener =
+      this.walletService.onChainChanged((chainId) => {
 
+        this.ngZone.run(() =>
+          this.updateNetworkStatus(chainId)
+        );
+
+      });
+
+
+    this.removeAccountsChangedListener =
+      this.walletService.onAccountsChanged((accounts) => {
+
+        this.ngZone.run(() => {
+
+          const address = accounts?.[0] ?? '';
+
+          this.walletAddress.set(address);
+
+        });
+
+      });
+  }
   ngOnDestroy() {
     this.removeChainChangedListener?.();
   }
@@ -117,8 +137,9 @@ export class HomePage implements OnInit, OnDestroy {
     try {
       this.gettingName.set(true);
       await this.walletService.ensureAllowedNetwork();
-      this.name.set(await this.contractService.getName());
-      this.statusMessage.set('Name loaded from contract.');
+this.currentName.set(
+  await this.contractService.getName()
+);      this.statusMessage.set('Name loaded from contract.');
     } catch (error) {
       console.error(error);
       this.statusMessage.set('Get name failed.');

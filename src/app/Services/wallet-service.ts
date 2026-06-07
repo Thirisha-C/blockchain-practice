@@ -4,19 +4,29 @@ import { Injectable } from '@angular/core';
   providedIn: 'root',
 })
 export class WalletService {
-  readonly allowedChainId = '0x38';
-  readonly allowedNetworkName = 'BNB Smart Chain';
-  readonly allowedNetworkParams = {
-    chainId: this.allowedChainId,
-    chainName: this.allowedNetworkName,
-    nativeCurrency: {
-      name: 'BNB',
-      symbol: 'BNB',
-      decimals: 18,
-    },
-    rpcUrls: ['https://bsc-dataseed.binance.org'],
-    blockExplorerUrls: ['https://bscscan.com'],
-  };
+readonly allowedChainId = '0x88bb0';
+
+readonly allowedNetworkName = 'Hoodi Testnet';
+
+readonly allowedNetworkParams = {
+  chainId: this.allowedChainId,
+
+  chainName: this.allowedNetworkName,
+
+  nativeCurrency: {
+    name: 'ETH',
+    symbol: 'ETH',
+    decimals: 18,
+  },
+
+  rpcUrls: [
+    'https://rpc.hoodi.ethpandaops.io'
+  ],
+
+  blockExplorerUrls: [
+    'https://hoodi.etherscan.io'
+  ],
+};
   walletAddress = '';
 
   get ethereum(): any {
@@ -30,11 +40,11 @@ export class WalletService {
     }
 
     try {
+      await this.ensureAllowedNetwork();
+
       const accounts = await this.ethereum.request({
         method: 'eth_requestAccounts',
       });
-
-      await this.ensureAllowedNetwork();
       this.walletAddress = accounts?.[0] ?? '';
       return this.walletAddress;
     } catch (e) {
@@ -60,11 +70,28 @@ export class WalletService {
   }
 
   onChainChanged(callback: (chainId: string) => void): () => void {
-    if (!this.ethereum?.on) return () => {};
+    if (!this.ethereum?.on) return () => { };
 
     this.ethereum.on('chainChanged', callback);
     return () => this.ethereum?.removeListener?.('chainChanged', callback);
   }
+  onAccountsChanged(
+  callback: (accounts: string[]) => void
+): () => void {
+
+  if (!this.ethereum?.on) return () => {};
+
+  this.ethereum.on(
+    'accountsChanged',
+    callback
+  );
+
+  return () =>
+    this.ethereum?.removeListener?.(
+      'accountsChanged',
+      callback
+    );
+}
 
   async ensureAllowedNetwork(): Promise<void> {
     if (await this.isAllowedNetwork()) return;
